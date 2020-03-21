@@ -1,7 +1,9 @@
 import urllib
 import time
 import numpy as np
-from datetime import date
+from datetime import datetime
+import os
+
 import warnings
 warnings.filterwarnings("ignore")
 
@@ -20,7 +22,7 @@ while opt>len(listdir)-1 or opt<0:
   try:
     opt = int(input('> '))
   except:
-    print('Something is not correct, please try again!')
+    print('Something is wrong, please try again.')
     opt = -1
 url=urlorig+'/'+listdir[opt]
 print('    Option selected: '+listdir[opt]+'.')
@@ -31,6 +33,8 @@ while file=='DIR':
   page=urllib.request.urlopen(url).read()
   line=page.decode("utf-8", "replace").split('\r\n')
   line=line[:-1]
+  with open("listfile.txt", "w") as outfile:
+    outfile.write("\n".join(line))
   listdir=np.array([],dtype=str)
   listdesease=np.array([],dtype=str)
   listyear=np.array([],dtype=str)
@@ -74,7 +78,7 @@ while file=='DIR':
       try:
         opt = int(input('> '))
       except:
-        print('Something is not correct, please try again!')
+        print('Something is wrong, please try again.')
         opt = -1
     url=url+'/'+listdir[opt]
     print('    Option selected: '+listdir[opt]+'.')
@@ -94,10 +98,11 @@ while file=='DIR':
       while not valid or opt[0]<0:
         try:
           opt = list(map(int,input('> ').split(',')))
+
           if len(opt)>1 and sum(i > len(np.unique(listdesease))-1 for i in opt)==0:
             valid=True
           else:
-            if opt[0]<len(np.unique(listdesease))-1:
+            if opt[0]<len(np.unique(listdesease)):
               valid=True
         except:
           print('Something is not correct, please try again!')
@@ -123,7 +128,7 @@ while file=='DIR':
           if len(opt)>1 and sum(i > len(optstate)-1 for i in opt)==0:
             valid=True
           else:
-            if opt[0]<len(optstate)-1:
+            if opt[0]<len(optstate):
               valid=True
         except:
           print('Something is not correct, please try again!')
@@ -152,7 +157,7 @@ while file=='DIR':
           if len(opt)>1 and sum(i > len(optyear)-1 for i in opt)==0:
             valid=True
           else:
-            if opt[0]<len(optyear)-1:
+            if opt[0]<len(optyear):
               valid=True
         except:
           print('Something is not correct, please try again!')
@@ -171,18 +176,39 @@ while file=='DIR':
         print('    Options selected: '+', '.join(optyear)+'.')
       else:
         print('    Option selected: '+optyear[0]+'.')          
-
       file=''
 
-files=[]
-for ifil in listdir[indexY]:
-  files.append(url+'/'+ifil)
+try:
+  os.system('mkdir ORIGINAL')
+  print('    > Downloading data...')
+except:
+  print('    > Downloading data...')
+dirlist=os.listdir('ORIGINAL/')
+for ifile,dirfile in enumerate(listdir[indexY]):
+  if dirfile in dirlist:
+    dirday=datetime.fromtimestamp(os.path.getmtime('ORIGINAL/'+dirfile))
+    dirsize=os.stat('ORIGINAL/'+dirfile).st_size
+    webday=datetime.strptime(line[indexY[ifile]][:17],'%m-%d-%y %I:%M%p')
+    websize=int(line[indexY[ifile]][25:38])
+    if (dirday-webday).days>0 and dirsize==websize:
+      print('        > '+dirfile+' is already the newest version.')
+    else:
+      urllib.request.urlretrieve(url+'/'+dirfile, 'ORIGINAL/'+dirfile) 
+      print('        > '+dirfile+' was updated.')
+  else:
+    urllib.request.urlretrieve(url+'/'+dirfile, 'ORIGINAL/'+dirfile) 
+    print('        > '+dirfile+'  was downloaded.')
 
 
+# optall=[]
+# for aux in opt:
+#   if len(aux.split('-'))==1:
+#     optall.append(aux)
+#   elif len(aux.split('-'))==2:
+#     if aux.split('-')[0]<aux.split('-')[1]:
+      
 
-# ftp://ftp.datasus.gov.br/dissemin/publicos/SINAN/DADOS/FINAIS/TETNES18.dbc
 
-# comparar versao do bd
-# oq nao tem baixa
-# se tem nova versao baixa nova
+# infon=np.genfromtxt('listfile.txt',dtype=[np.str,np.str,np.int,np.str], names=('date','time','size','file'))  
+# range of options and all
 # o q tem na pasta q nao tem no site
